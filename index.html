@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S.H.I.E.L.D. Enciclopedia - Base de Datos Marvel</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=Rajdhani:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-dark: #0a0a0c;
+            --card-bg: #15161a;
+            --text-main: #e2e8f0;
+            --marvel-red: #ec1d24;
+            --shield-blue: #235fac;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            background-image: radial-gradient(circle at top center, #1a1010 0%, var(--bg-dark) 70%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, .title-font {
+            font-family: 'Oswald', sans-serif;
+            text-transform: uppercase;
+        }
+
+        .mono-font { font-family: 'Space Mono', monospace; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--marvel-red); border-radius: 4px; }
+
+        /* ====================================================
+           PANTALLA DE INFILTRACIÓN (LOADING)
+           ==================================================== */
+        #hacker-loader {
+            position: fixed;
+            inset: 0;
+            background-color: #050505;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+        .loader-terminal {
+            color: #0f0;
+            font-size: 1.2rem;
+            text-shadow: 0 0 5px #0f0;
+            text-align: center;
+            max-width: 80%;
+        }
+        .shield-logo-glitch {
+            font-size: 5rem;
+            color: #333;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        @keyframes glitch-logo {
+            0% { color: #333; transform: translate(0); }
+            20% { color: #ec1d24; transform: translate(-2px, 2px); }
+            40% { color: #0f0; transform: translate(2px, -2px); }
+            60% { color: #333; transform: translate(0); }
+            100% { color: var(--shield-blue); text-shadow: 0 0 20px var(--shield-blue); }
+        }
+
+        /* ====================================================
+           TARJETAS BASE DE LA ENCICLOPEDIA
+           ==================================================== */
+        .encyclopedia-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            border: 1px solid #252830;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            z-index: 1;
+        }
+
+        .encyclopedia-card::before, .encyclopedia-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .encyclopedia-card:hover {
+            transform: translateY(-12px) scale(1.03);
+            z-index: 10;
+        }
+
+        .card-image-container {
+            width: 100%;
+            height: 280px;
+            position: relative;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .card-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center 20%;
+            transition: transform 0.8s ease, filter 0.8s ease;
+            filter: grayscale(60%) contrast(1.1) brightness(0.8);
+        }
+
+        .encyclopedia-card:hover .card-image {
+            transform: scale(1.15);
+            filter: grayscale(0%) contrast(1.2) brightness(1.1);
+        }
+
+        /* ====================================================
+           EFECTOS HOVER EXTREMOS Y PERSONALIZADOS
+           ==================================================== */
+        
+        /* 1. IRON MAN (HUD Targeting System) */
+        .hover-ironman:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+        }
+        .hover-ironman:hover::after {
+            content: '';
+            background: 
+                linear-gradient(90deg, transparent 49.5%, rgba(0,255,255,0.5) 49.5%, rgba(0,255,255,0.5) 50.5%, transparent 50.5%),
+                linear-gradient(0deg, transparent 49.5%, rgba(0,255,255,0.5) 49.5%, rgba(0,255,255,0.5) 50.5%, transparent 50.5%);
+            border: 2px dashed rgba(0, 255, 255, 0.6);
+            border-radius: 50%;
+            width: 150px;
+            height: 150px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -100%) rotate(0deg);
+            animation: ironman-hud 4s linear infinite;
+            opacity: 1;
+            z-index: 2;
+        }
+        @keyframes ironman-hud { 100% { transform: translate(-50%, -100%) rotate(360deg); } }
+
+        /* 2. CAPITÁN AMÉRICA (Escudo / Destello Estelar) */
+        .hover-capamerica:hover {
+            border-color: #ffffff;
+            box-shadow: -10px 0 20px rgba(236, 29, 36, 0.6), 10px 0 20px rgba(35, 95, 172, 0.6);
+        }
+        .hover-capamerica:hover::before {
+            background: radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, transparent 50%);
+            opacity: 0.5;
+            animation: pulse-shield 1s infinite alternate;
+        }
+        @keyframes pulse-shield { from { transform: scale(1); } to { transform: scale(1.5); } }
+
+        /* 3. THOR (Tormenta Eléctrica Intensa) */
+        @keyframes thunder-strike {
+            0%, 90%, 94%, 98%, 100% { box-shadow: 0 0 10px rgba(0, 191, 255, 0.2); border-color: #444; }
+            92%, 96% { box-shadow: 0 0 50px #ffffff, inset 0 0 30px #00bfff; border-color: #ffffff; background-color: rgba(255,255,255,0.2); }
+        }
+        .hover-thor:hover { animation: thunder-strike 2.5s infinite; }
+
+        /* 4. HULK (Radiación Gamma y Temblor Violento) */
+        @keyframes hulk-smash {
+            0%, 100% { transform: translateY(-12px) scale(1.03) rotate(0deg); }
+            20% { transform: translateY(-10px) scale(1.03) rotate(-2deg); }
+            40% { transform: translateY(-14px) scale(1.03) rotate(2deg); }
+            60% { transform: translateY(-10px) scale(1.03) rotate(-2deg); }
+            80% { transform: translateY(-14px) scale(1.03) rotate(2deg); }
+        }
+        .hover-hulk:hover {
+            border-color: #39ff14;
+            box-shadow: 0 0 40px rgba(57, 255, 20, 0.5);
+            animation: hulk-smash 0.2s infinite;
+        }
+        .hover-hulk:hover::before {
+            background: radial-gradient(ellipse at bottom, rgba(57,255,20,0.4) 0%, transparent 60%);
+            opacity: 1;
+        }
+
+        /* 5. BLACK WIDOW (Red de Espionaje) */
+        .hover-blackwidow:hover { border-color: #ff0000; box-shadow: 0 10px 30px rgba(255, 0, 0, 0.2); }
+        .hover-blackwidow:hover::after {
+            background-image: 
+                linear-gradient(45deg, #ff0000 1px, transparent 1px),
+                linear-gradient(-45deg, #ff0000 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.15;
+            z-index: 5;
+        }
+
+        /* 6. SPIDER-MAN (Caída de Telaraña) */
+        @keyframes web-slide {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+        .hover-spiderman:hover { border-color: #ff0000; box-shadow: 0 0 20px rgba(0, 0, 255, 0.5); }
+        .hover-spiderman:hover::after {
+            background: repeating-radial-gradient(circle at top right, transparent, transparent 10px, rgba(255,255,255,0.2) 10px, rgba(255,255,255,0.2) 12px);
+            opacity: 1;
+            z-index: 2;
+            animation: web-slide 0.5s ease-out forwards;
+        }
+
+        /* 7. BLACK PANTHER (Circuito Vibranium) */
+        .hover-panther:hover { border-color: #8a2be2; box-shadow: 0 0 25px rgba(138, 43, 226, 0.6); }
+        .hover-panther:hover::before {
+            background: linear-gradient(180deg, transparent, rgba(138,43,226,0.3) 50%, transparent);
+            background-size: 100% 200%;
+            animation: panther-scan 2s linear infinite;
+            opacity: 1;
+        }
+        @keyframes panther-scan { 0% { background-position: 0 -100%; } 100% { background-position: 0 200%; } }
+
+        /* 8. DOCTOR STRANGE (Portal Místico) */
+        .hover-strange:hover { border-color: #ff8c00; box-shadow: 0 0 30px rgba(255, 140, 0, 0.6); }
+        .hover-strange:hover::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 200px; height: 200px;
+            margin-top: -150px; margin-left: -100px;
+            border-radius: 50%;
+            border: 4px dashed #ff8c00;
+            box-shadow: 0 0 20px #ff8c00, inset 0 0 20px #ff8c00;
+            animation: spin-portal 5s linear infinite;
+            opacity: 0.8;
+            z-index: 2;
+        }
+        @keyframes spin-portal { 100% { transform: rotate(360deg) scale(1.1); } }
+
+        /* 9. SCARLET WITCH (Humo de Magia del Caos) */
+        .hover-scarletwitch:hover { border-color: #dc143c; box-shadow: 0 0 30px #dc143c; }
+        .hover-scarletwitch:hover::before {
+            background: radial-gradient(circle, rgba(220,20,60,0.4) 0%, transparent 70%);
+            opacity: 1;
+            filter: blur(10px);
+            animation: chaos-pulse 2s infinite alternate;
+        }
+        @keyframes chaos-pulse { from { transform: scale(1); opacity: 0.5; } to { transform: scale(1.5); opacity: 1; } }
+
+        /* 10. WOLVERINE (Cortes de Adamantium) */
+        .hover-wolverine:hover { border-color: #ffd700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
+        .hover-wolverine:hover::after {
+            background: 
+                linear-gradient(110deg, transparent 48%, #fff 49%, #fff 51%, transparent 52%) 20% 0 / 100% 100% no-repeat,
+                linear-gradient(110deg, transparent 48%, #fff 49%, #fff 51%, transparent 52%) 50% 0 / 100% 100% no-repeat,
+                linear-gradient(110deg, transparent 48%, #fff 49%, #fff 51%, transparent 52%) 80% 0 / 100% 100% no-repeat;
+            opacity: 0.8;
+            z-index: 5;
+            filter: drop-shadow(0 0 5px #ffd700);
+            animation: slash-in 0.3s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+        }
+        @keyframes slash-in { 0% { clip-path: polygon(0 0, 100% 0, 100% 0, 0 0); } 100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); } }
+
+        /* 11. DEADPOOL (Glitch Visual Extremo) */
+        .hover-deadpool:hover { animation: deadpool-glitch 0.3s infinite; border-color: #8b0000; }
+        @keyframes deadpool-glitch {
+            0% { transform: translateY(-12px) scale(1.03) translate(0); filter: hue-rotate(0deg); }
+            25% { transform: translateY(-12px) scale(1.03) translate(-3px, 3px); box-shadow: -3px 0 red, 3px 0 blue; filter: hue-rotate(90deg); }
+            50% { transform: translateY(-12px) scale(1.03) translate(3px, -3px); box-shadow: 3px 0 red, -3px 0 blue; filter: invert(20%); }
+            75% { transform: translateY(-12px) scale(1.03) translate(-3px, -3px); box-shadow: none; filter: hue-rotate(0deg); }
+            100% { transform: translateY(-12px) scale(1.03) translate(0); }
+        }
+
+        /* 12. CAPTAIN MARVEL (Aura Binaria Cósmica) */
+        .hover-capmarvel:hover {
+            border-color: #ffa500;
+            box-shadow: 0 0 40px #ff4500, inset 0 0 20px #ffff00;
+        }
+        .hover-capmarvel:hover .card-image { filter: brightness(1.5) contrast(1.3); }
+
+
+        /* ====================================================
+           MODALES (Detalles y QR)
+           ==================================================== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 5, 8, 0.95);
+            backdrop-filter: blur(15px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            padding: 1rem;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid #333;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 750px;
+            transform: translateY(30px) scale(0.95);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
+            overflow: hidden;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
+
+        /* Contenedor QR */
+        #qr-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            background: #0d0d12;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid #252830;
+            margin-top: 1.5rem;
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .stat-container {
+            width: 100%; background: #2a2a2a; border-radius: 4px; height: 8px; overflow: hidden; margin-top: 4px;
+        }
+        .stat-bar-fill { height: 100%; border-radius: 4px; width: 0%; transition: width 1.2s cubic-bezier(0.25, 1, 0.5, 1); }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- ==================================================== -->
+    <!-- PANTALLA DE CARGA (INFILTRACIÓN SHIELD)              -->
+    <!-- ==================================================== -->
+    <div id="hacker-loader">
+        <i id="shield-icon-loader" class="fa-brands fa-shield-halved shield-logo-glitch"></i>
+        <div class="loader-terminal mono-font">
+            <p id="hack-text-1" class="mb-2">ESTABLECIENDO CONEXIÓN CON SERVIDORES S.H.I.E.L.D...</p>
+            <p id="hack-text-2" class="opacity-0 mb-2">BYPASS DE FIREWALL DE SEGURIDAD...</p>
+            <p id="hack-text-3" class="opacity-0 mb-2 text-red-500 font-bold">DESENCRIPTANDO ARCHIVOS CLASIFICADOS NIVEL OMEGA...</p>
+            <p id="hack-text-4" class="opacity-0 text-white bg-green-700 px-4 py-1 mt-4 rounded inline-block">ACCESO CONCEDIDO</p>
+        </div>
+        <div class="w-64 bg-gray-900 h-2 mt-8 border border-green-500/30 rounded">
+            <div id="loader-bar" class="bg-green-500 h-full w-0 transition-all duration-[2500ms] ease-out"></div>
+        </div>
+    </div>
+
+    <!-- HEADER / NAVBAR -->
+    <nav class="sticky top-0 z-40 bg-[#0a0a0c]/90 backdrop-blur-md border-b border-gray-800 shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="bg-[#ec1d24] text-white px-3 py-1 font-bold text-3xl title-font tracking-tighter shadow-[0_0_10px_#ec1d24]">
+                    MARVEL
+                </div>
+                <h1 class="hidden sm:block text-2xl font-bold tracking-widest text-gray-200 title-font">
+                    ARCHIVOS <span class="text-blue-500">S.H.I.E.L.D.</span>
+                </h1>
+            </div>
+            <div class="text-gray-400 text-sm mono-font tracking-widest flex flex-col text-right">
+                <span>STATUS: <span class="text-green-500 font-bold">ONLINE</span></span>
+                <span class="text-[10px]">CLEARANCE: OMEGA</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT: ENCYCLOPEDIA GRID -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pb-32 relative z-10">
+        <div class="mb-12 text-center md:text-left border-l-4 border-blue-600 pl-4 bg-gradient-to-r from-blue-900/20 to-transparent py-4">
+            <h2 class="text-4xl md:text-5xl font-bold title-font text-white mb-2 tracking-wide">Base de Datos de Héroes</h2>
+            <p class="text-gray-400 text-lg mono-font">Haz clic en un expediente para acceder a la información clasificada y generar su credencial QR.</p>
+        </div>
+
+        <div id="encyclopedia-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+            <!-- Inyectado por JS -->
+        </div>
+    </main>
+
+    <!-- ==================================================== -->
+    <!-- MODAL: DETALLES DEL HÉROE Y GENERADOR QR             -->
+    <!-- ==================================================== -->
+    <div id="hero-detail-modal" class="modal-overlay">
+        <div class="modal-content relative bg-[#15161a]">
+            <button class="btn-close-modal absolute top-4 right-4 z-20 w-10 h-10 bg-black/60 hover:bg-red-600 text-white rounded-full backdrop-blur-sm transition-colors flex items-center justify-center border border-white/20">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- Imagen de Cabecera -->
+            <div class="w-full h-[350px] relative">
+                <img id="detail-image" src="" alt="Hero" class="w-full h-full object-cover object-top">
+                <div class="absolute inset-0 bg-gradient-to-t from-[#15161a] via-[#15161a]/60 to-transparent"></div>
+                <div class="absolute bottom-6 left-8">
+                    <span id="detail-alias" class="bg-[#ec1d24] text-white text-xs font-bold px-3 py-1 rounded tracking-widest uppercase title-font mb-2 inline-block">Alias</span>
+                    <h2 id="detail-name" class="title-font text-5xl md:text-6xl font-bold text-white drop-shadow-[0_5px_5px_rgba(0,0,0,0.9)]">NOMBRE</h2>
+                </div>
+            </div>
+
+            <!-- Contenido Informativo -->
+            <div class="p-8 pt-2">
+                <p id="detail-bio" class="text-gray-300 text-base md:text-lg leading-relaxed mb-8 font-medium italic border-l-2 border-gray-600 pl-4">
+                    Biografía
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <!-- Info Básica -->
+                    <div>
+                        <h4 class="title-font text-gray-500 mb-4 border-b border-gray-700 pb-2 text-xl tracking-wider">
+                            <i class="fa-solid fa-folder-open text-blue-500 mr-2"></i> Perfil Clasificado
+                        </h4>
+                        <ul class="space-y-5 text-sm text-gray-400 mono-font">
+                            <li><strong class="text-white block text-xs uppercase mb-1">Afiliación Principal</strong> <span id="detail-team" class="text-base text-blue-400">Avengers</span></li>
+                            <li><strong class="text-white block text-xs uppercase mb-1">Base de Operaciones</strong> <span id="detail-base" class="text-base">New York</span></li>
+                            <li><strong class="text-white block text-xs uppercase mb-1">Habilidad Destacada</strong> <span id="detail-ability" class="text-base text-yellow-500">Volar</span></li>
+                        </ul>
+
+                        <!-- Botón QR -->
+                        <button id="btn-generate-qr" class="mt-8 w-full bg-blue-700 hover:bg-blue-600 text-white py-3 rounded font-bold transition-colors title-font tracking-widest flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(35,95,172,0.5)]">
+                            <i class="fa-solid fa-qrcode text-xl"></i> GENERAR CREDENCIAL QR
+                        </button>
+
+                        <div id="qr-container">
+                            <p class="text-gray-400 text-xs text-center mb-3 mono-font">ESCANEABLE PARA TRANSFERENCIA DE DATOS</p>
+                            <img id="qr-image" src="" alt="Código QR del Héroe" class="bg-white p-2 rounded shadow-[0_0_20px_#fff]">
+                        </div>
+                    </div>
+
+                    <!-- Estadísticas -->
+                    <div>
+                        <h4 class="title-font text-gray-500 mb-4 border-b border-gray-700 pb-2 text-xl tracking-wider">
+                            <i class="fa-solid fa-chart-simple text-green-500 mr-2"></i> Métricas (1-100)
+                        </h4>
+                        
+                        <div class="mb-5">
+                            <div class="flex justify-between text-xs font-bold text-gray-300 mb-1 mono-font">
+                                <span>FUERZA</span> <span id="detail-stat-str-val">0</span>
+                            </div>
+                            <div class="stat-container"><div id="detail-stat-str" class="stat-bar-fill bg-gradient-to-r from-red-800 to-red-500 w-0"></div></div>
+                        </div>
+                        
+                        <div class="mb-5">
+                            <div class="flex justify-between text-xs font-bold text-gray-300 mb-1 mono-font">
+                                <span>INTELIGENCIA</span> <span id="detail-stat-int-val">0</span>
+                            </div>
+                            <div class="stat-container"><div id="detail-stat-int" class="stat-bar-fill bg-gradient-to-r from-blue-800 to-blue-400 w-0"></div></div>
+                        </div>
+
+                        <div class="mb-5">
+                            <div class="flex justify-between text-xs font-bold text-gray-300 mb-1 mono-font">
+                                <span>VELOCIDAD</span> <span id="detail-stat-spd-val">0</span>
+                            </div>
+                            <div class="stat-container"><div id="detail-stat-spd" class="stat-bar-fill bg-gradient-to-r from-yellow-700 to-yellow-400 w-0"></div></div>
+                        </div>
+
+                        <div class="mb-5">
+                            <div class="flex justify-between text-xs font-bold text-gray-300 mb-1 mono-font">
+                                <span>PROYECCIÓN DE ENERGÍA</span> <span id="detail-stat-eng-val">0</span>
+                            </div>
+                            <div class="stat-container"><div id="detail-stat-eng" class="stat-bar-fill bg-gradient-to-r from-purple-800 to-purple-400 w-0"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================================================== -->
+    <!-- LÓGICA JAVASCRIPT                                    -->
+    <!-- ==================================================== -->
+    <script>
+        // LÓGICA DE LA PANTALLA DE INFILTRACIÓN
+        document.addEventListener('DOMContentLoaded', () => {
+            const loaderBar = document.getElementById('loader-bar');
+            const icon = document.getElementById('shield-icon-loader');
+            
+            setTimeout(() => { loaderBar.style.width = '100%'; }, 100);
+            setTimeout(() => { document.getElementById('hack-text-2').classList.remove('opacity-0'); }, 800);
+            setTimeout(() => { 
+                document.getElementById('hack-text-3').classList.remove('opacity-0'); 
+                icon.style.animation = "glitch-logo 0.5s forwards"; 
+            }, 1600);
+            setTimeout(() => { document.getElementById('hack-text-4').classList.remove('opacity-0'); }, 2400);
+            
+            setTimeout(() => {
+                const loader = document.getElementById('hacker-loader');
+                loader.style.opacity = '0';
+                loader.style.visibility = 'hidden';
+                renderHeroes(); // Renderizar después de cargar
+            }, 3200);
+        });
+
+        // 1. BASE DE DATOS EXTENDIDA (Con biografías largas)
+        const marvelDatabase = [
+            {
+                id: 'shld-ironman', name: 'Iron Man', alias: 'Tony Stark',
+                bio: 'Anthony Edward Stark es un magnate multimillonario, genio inventor y ex-CEO de Stark Industries. Tras sufrir una herida letal en cautiverio, construyó una armadura de alta tecnología impulsada por un Reactor Arc en su pecho para escapar. Desde entonces, ha mejorado continuamente su armadura, convirtiéndose en el líder tecnológico de los Vengadores y el mayor defensor de la Tierra frente a amenazas extraterrestres.',
+                team: 'Avengers, Illuminati', base: 'Stark Tower, New York / Malibu', ability: 'Armadura Tecnológica, Vuelo Supersónico, Rayos Repulsores',
+                stats: { str: 75, int: 100, spd: 85, eng: 95 },
+                hoverClass: 'hover-ironman',
+                image: 'https://cdn.britannica.com/49/182849-050-4C7FE34F/scene-Iron-Man.jpg'
+            },
+            {
+                id: 'shld-cap', name: 'Capitán América', alias: 'Steve Rogers',
+                bio: 'Steven Grant Rogers era un joven frágil de Brooklyn con un corazón inquebrantable. Durante la Segunda Guerra Mundial, se ofreció como voluntario para el Proyecto Renacimiento. Inyectado con el Suero del Súper Soldado, su cuerpo fue transformado al pináculo de la perfección humana. Tras pasar décadas congelado en el hielo, despertó en el siglo XXI para continuar liderando a los Vengadores con un escudo de Vibranium indestructible y su brújula moral infalible.',
+                team: 'Avengers, S.H.I.E.L.D.', base: 'Avengers Compound', ability: 'Fuerza, Agilidad, Escudo de Vibranium, Táctico Maestro',
+                stats: { str: 80, int: 75, spd: 70, eng: 20 },
+                hoverClass: 'hover-capamerica',
+                image: 'https://img.goodfon.com/original/2800x1575/8/3d/captain-america-chris-evans-marvel-geroi-kostium-shchit-molo.jpg'
+            },
+            {
+                id: 'shld-thor', name: 'Thor', alias: 'Dios del Trueno',
+                bio: 'Thor Odinson es el príncipe heredero de Asgard, un guerrero alienígena reverenciado como deidad en la mitología nórdica terrestre. Originalmente arrogante, fue desterrado a la Tierra para aprender humildad. Empuña el legendario martillo Mjolnir (y posteriormente el Stormbreaker), lo que le permite canalizar el poder de las tormentas, volar por el cosmos y enfrentarse a las mayores amenazas universales.',
+                team: 'Avengers, Revengers, Guardianes', base: 'New Asgard / Espacio Exterior', ability: 'Fuerza Divina, Control del Clima, Vuelo',
+                stats: { str: 100, int: 60, spd: 80, eng: 98 },
+                hoverClass: 'hover-thor',
+                image: 'https://media.revistagq.com/photos/5cf113be9d80fc3cffe34a08/16:9/w_2240,c_limit/07%20thor.jpg'
+            },
+            {
+                id: 'shld-hulk', name: 'Hulk', alias: 'Bruce Banner',
+                bio: 'El Dr. Bruce Banner era uno de los científicos más brillantes del planeta, especializado en radiación gamma. Un accidente en su laboratorio lo expuso a una dosis letal, pero en lugar de matarlo, alteró su ADN. Ahora, cada vez que su ritmo cardíaco aumenta o se enfurece, se transforma en "Hulk", un coloso esmeralda de fuerza incalculable que representa un peligro tanto para sus enemigos como para sus aliados.',
+                team: 'Avengers, Defenders', base: 'Laboratorio de Banner / Variable', ability: 'Fuerza Ilimitada proporcional a la Ira, Factor Curativo Extremo',
+                stats: { str: 100, int: 95, spd: 65, eng: 80 },
+                hoverClass: 'hover-hulk',
+                image: 'https://i.blogs.es/2f9456/inmortal-hulk/1366_2000.jpg'
+            },
+            {
+                id: 'shld-blackwidow', name: 'Black Widow', alias: 'Natasha Romanoff',
+                bio: 'Criada desde la infancia en la infame "Habitación Roja" soviética, Natalia Alianovna Romanova fue sometida a un brutal entrenamiento que la convirtió en la asesina perfecta. Eventualmente desertó de la KGB para unirse a S.H.I.E.L.D., buscando redimir su sangriento pasado. Es una maestra del combate cuerpo a cuerpo, la manipulación psicológica y el espionaje corporativo y militar.',
+                team: 'Avengers, S.H.I.E.L.D.', base: 'Instalaciones Clasificadas', ability: 'Maestra de Artes Marciales, Espionaje, Francotiradora',
+                stats: { str: 50, int: 85, spd: 75, eng: 15 },
+                hoverClass: 'hover-blackwidow',
+                image: 'https://wallpapercat.com/w/full/0/6/2/349383-3840x2160-desktop-4k-black-widow-wallpaper-image.jpg'
+            },
+            {
+                id: 'shld-spiderman', name: 'Spider-Man', alias: 'Peter Parker',
+                bio: 'Durante una excursión escolar a un laboratorio genético, el adolescente Peter Parker fue mordido por una araña genéticamente modificada. Descubrió que había adquirido la fuerza proporcional de una araña, la capacidad de adherirse a superficies y un sexto sentido precognitivo. Guiado por la lección de que "un gran poder conlleva una gran responsabilidad", protege las calles de Nueva York.',
+                team: 'Avengers', base: 'Queens, New York', ability: 'Fuerza Arácnida, Sentido Arácnido, Lanzatelarañas',
+                stats: { str: 70, int: 85, spd: 90, eng: 40 },
+                hoverClass: 'hover-spiderman',
+                image: 'https://miredvista.co/wp-content/uploads/2026/07/spiderman.jpg'
+            },
+            {
+                id: 'shld-panther', name: 'Black Panther', alias: 'T\'Challa',
+                bio: 'T\'Challa es el soberano de Wakanda, una nación africana tecnológicamente ultra-avanzada oculta al resto del mundo. Como protector tradicional de su pueblo, consumió la mística "hierba en forma de corazón", conectándose con el dios pantera Bast y obteniendo capacidades físicas sobrehumanas. Su traje está tejido íntegramente con Vibranium, absorbiendo energía cinética.',
+                team: 'Avengers, Wakanda', base: 'Wakanda', ability: 'Fuerza Mejorada, Intelecto de Genio, Traje Cinético de Vibranium',
+                stats: { str: 80, int: 90, spd: 85, eng: 70 },
+                hoverClass: 'hover-panther',
+                image: 'https://imagenes.hobbyconsolas.com/files/image_1280_720/uploads/imagenes/2023/11/06/6903ce13ec83c.jpeg'
+            },
+            {
+                id: 'shld-strange', name: 'Doctor Strange', alias: 'Stephen Strange',
+                bio: 'El Dr. Stephen Strange era un neurocirujano arrogante hasta que un accidente automovilístico destrozó sus manos. Buscando desesperadamente una cura, viajó a Kamar-Taj, donde fue entrenado por The Ancient One en las artes místicas. Ahora, como el Hechicero Supremo, Strange es la principal línea de defensa de la Tierra contra amenazas interdimensionales y mágicas.',
+                team: 'Maestros de las Artes Místicas', base: 'Sanctum Sanctorum, New York', ability: 'Magia Eldritch, Manipulación del Espacio-Tiempo, Vuelo (Capa de Levitación)',
+                stats: { str: 45, int: 95, spd: 50, eng: 100 },
+                hoverClass: 'hover-strange',
+                image: 'https://imagenes.20minutos.es/files/image_1280_720/uploads/imagenes/2016/10/24/doctor-strange.jpg'
+            },
+            {
+                id: 'shld-scarlet', name: 'Scarlet Witch', alias: 'Wanda Maximoff',
+                bio: 'Nacida en Sokovia, Wanda y su hermano gemelo Pietro fueron sujetos de experimentos con la Gema de la Mente. Sus habilidades latentes fueron desbloqueadas, otorgándole poderes de telequinesis, telepatía y, eventualmente, la mítica Magia del Caos. Capaz de reescribir la realidad misma, es considerada una de las entidades más poderosas del multiverso, equilibrándose constantemente en la línea entre la heroína y la amenaza.',
+                team: 'Avengers', base: 'Variable (Westview)', ability: 'Magia del Caos, Alteración de la Realidad, Telequinesis',
+                stats: { str: 40, int: 70, spd: 60, eng: 100 },
+                hoverClass: 'hover-scarletwitch',
+                image: 'https://images.hdqwalls.com/wallpapers/scarlet-witch-enigmatic-power-0n.jpg'
+            },
+            {
+                id: 'shld-wolverine', name: 'Wolverine', alias: 'Logan / James Howlett',
+                bio: 'Nacido en el siglo XIX, James Howlett posee una mutación que le otorga sentidos agudos, garras de hueso retráctiles y un factor curativo que lo hace virtualmente inmortal. Fue capturado por el programa Arma X, quienes injertaron el metal indestructible Adamantium a todo su esqueleto. Atormentado por la pérdida de memoria y la tragedia, es el miembro más feroz de los X-Men.',
+                team: 'X-Men, X-Force', base: 'X-Mansion, Westchester', ability: 'Factor Curativo, Esqueleto y Garras de Adamantium, Sentidos Animales',
+                stats: { str: 75, int: 60, spd: 80, eng: 10 },
+                hoverClass: 'hover-wolverine',
+                image: 'https://i0.wp.com/www.pcmrace.com/wp-content/uploads/2026/09/Marvels-Wolverine-Launch-PV_09-03-26.jpg?resize=750%2C400&ssl=1'
+            },
+            {
+                id: 'shld-deadpool', name: 'Deadpool', alias: 'Wade Wilson',
+                bio: 'El mercenario Wade Wilson fue diagnosticado con cáncer terminal y se sometió a un tratamiento experimental clandestino que activó un gen mutante latente. Si bien esto curó su cáncer otorgándole un factor de curación superior al de Wolverine, dejó su cuerpo severamente desfigurado y fracturó su mente. Es infame por su sentido del humor macabro y su capacidad para "romper la cuarta pared".',
+                team: 'X-Force, Mutantes Independientes', base: 'Apartamento de Blind Al', ability: 'Regeneración Inmortal, Maestro Tirador y Espadachín, Locura Táctica',
+                stats: { str: 65, int: 60, spd: 75, eng: 10 },
+                hoverClass: 'hover-deadpool',
+                image: 'https://image.tmdb.org/t/p/original/fSRb7vyIP8rQpL0I47P3qUsEKX3.jpg'
+            },
+            {
+                id: 'shld-capmarvel', name: 'Captain Marvel', alias: 'Carol Danvers',
+                bio: 'Carol Danvers era una piloto de combate de élite de la Fuerza Aérea de EE. UU. Durante un enfrentamiento alienígena, fue expuesta a la energía pura del motor de velocidad de la luz (alimentado por el Teseracto). Absorbió la energía cósmica, perdiendo sus recuerdos y siendo reclutada por los Kree. Al descubrir su verdadera humanidad, liberó todo su potencial "binario", patrullando ahora la galaxia entera.',
+                team: 'Avengers', base: 'El Cosmos', ability: 'Energía Cósmica Binaria, Vuelo Espacial, Superfuerza y Durabilidad',
+                stats: { str: 95, int: 70, spd: 98, eng: 100 },
+                hoverClass: 'hover-capmarvel',
+                image: 'https://image.tmdb.org/t/p/original/AtsgWhDnHTq68L0lLsUrCnM7TjG.jpg'
+            }
+        ];
+
+        let currentHero = null;
+
+        function renderHeroes() {
+            const grid = document.getElementById('encyclopedia-grid');
+            grid.innerHTML = '';
+            marvelDatabase.forEach(hero => {
+                const card = document.createElement('div');
+                card.className = `encyclopedia-card ${hero.hoverClass}`;
+                card.onclick = () => showHeroDetails(hero);
+                
+                const avgPower = Math.round((hero.stats.str + hero.stats.int + hero.stats.spd + hero.stats.eng)/4);
+
+                card.innerHTML = `
+                    <div class="card-image-container">
+                        <img src="${hero.image}" alt="${hero.name}" class="card-image" loading="lazy">
+                        <div class="absolute top-3 right-3 bg-black/80 backdrop-blur text-white text-[10px] px-2 py-1 rounded border border-gray-600 mono-font z-10">
+                            <i class="fa-solid fa-lock text-red-500 mr-1"></i> ID: ${hero.id.toUpperCase()}
+                        </div>
+                    </div>
+                    <div class="p-5 flex-grow flex flex-col z-10 bg-gradient-to-t from-[var(--card-bg)] via-[var(--card-bg)] to-transparent relative">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 mono-font">${hero.alias}</span>
+                        <h3 class="title-font text-3xl font-bold text-white mb-4 drop-shadow-md">${hero.name}</h3>
+                        
+                        <div class="mt-auto w-full">
+                            <div class="flex justify-between text-[10px] text-gray-500 mb-1 uppercase font-bold tracking-widest mono-font">
+                                <span>Índice de Amenaza</span>
+                                <span class="text-white">${avgPower}%</span>
+                            </div>
+                            <div class="stat-container h-1 bg-gray-800">
+                                <div class="stat-bar-fill bg-white" style="width: ${avgPower}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // MOSTRAR DETALLES Y ANIMAR BARRAS
+        function showHeroDetails(hero) {
+            currentHero = hero;
+            const detailModal = document.getElementById('hero-detail-modal');
+            
+            document.getElementById('detail-image').src = hero.image;
+            document.getElementById('detail-name').textContent = hero.name;
+            document.getElementById('detail-alias').textContent = hero.alias;
+            document.getElementById('detail-bio').textContent = hero.bio;
+            document.getElementById('detail-team').textContent = hero.team;
+            document.getElementById('detail-base').textContent = hero.base;
+            document.getElementById('detail-ability').textContent = hero.ability;
+
+            // Ocultar QR si estaba abierto
+            document.getElementById('qr-container').style.display = 'none';
+            document.getElementById('qr-image').src = '';
+
+            const bars = ['str', 'int', 'spd', 'eng'];
+            
+            // Reset a 0
+            bars.forEach(stat => {
+                document.getElementById(`detail-stat-${stat}`).style.width = '0%';
+                document.getElementById(`detail-stat-${stat}-val`).textContent = '0';
+            });
+
+            detailModal.classList.add('active');
+
+            // Animar subida
+            setTimeout(() => {
+                bars.forEach(stat => {
+                    document.getElementById(`detail-stat-${stat}`).style.width = `${hero.stats[stat]}%`;
+                    
+                    // Efecto de contador de números
+                    let currentVal = 0;
+                    const target = hero.stats[stat];
+                    const interval = setInterval(() => {
+                        if(currentVal >= target) { clearInterval(interval); }
+                        else { currentVal += 2; if(currentVal > target) currentVal = target; document.getElementById(`detail-stat-${stat}-val`).textContent = currentVal; }
+                    }, 20);
+                });
+            }, 300);
+        }
+
+        // GENERAR QR
+        document.getElementById('btn-generate-qr').addEventListener('click', () => {
+            if(!currentHero) return;
+            const qrContainer = document.getElementById('qr-container');
+            const qrImage = document.getElementById('qr-image');
+            
+            // Usando API gratuita de generación de QR. 
+            // Genera un texto con el ID y Nombre para que el celular del usuario lo lea.
+            const qrData = encodeURIComponent(`SHIELD_DB_ACCESS || ${currentHero.name} || ID: ${currentHero.id}`);
+            qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=0d0d12&bgcolor=ffffff&data=${qrData}`;
+            
+            qrContainer.style.display = 'flex';
+            
+            // Scroll hacia abajo suave
+            qrContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        });
+
+        // CERRAR MODALES
+        document.querySelectorAll('.btn-close-modal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('hero-detail-modal').classList.remove('active');
+            });
+        });
+    </script>
+</body>
+</html>
