@@ -692,7 +692,7 @@
             
             // Usando API gratuita de generación de QR. 
             // Genera un texto con el ID y Nombre para que el celular del usuario lo lea.
-           const qrData = encodeURIComponent(`https://alumsarmas-sketch.github.io/marvelpedia4fans/?id=${currentHero.id}`);
+          const qrData = encodeURIComponent(`https://alumsarmas-sketch.github.io/marvelpedia4fans/?hero=${currentHero.id}`);
             qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=0d0d12&bgcolor=ffffff&data=${qrData}`;
             
             qrContainer.style.display = 'flex';
